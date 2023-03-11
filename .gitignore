@@ -1,2 +1,5 @@
 tmp/
 avalanche/bundle/
+.idea/
+.git/
+**/._**

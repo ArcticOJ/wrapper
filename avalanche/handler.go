@@ -34,7 +34,7 @@ func (handler RouteHandler) ServeFile(file *File, writer http.ResponseWriter, re
 }
 
 func (handler RouteHandler) Handle404(writer http.ResponseWriter, request *http.Request) {
-	if file, ok := handler.PageMap["bundle/404.html"]; ok {
+	if file, ok := handler.PageMap["/404"]; ok {
 		writer.WriteHeader(http.StatusNotFound)
 		handler.ServeFile(file, writer, request)
 		return
@@ -55,9 +55,9 @@ func (handler RouteHandler) ServeHTTP(writer http.ResponseWriter, request *http.
 			return
 		}
 	}
-	/*if file, ok := handler.PageMap[path]; ok {
+	if file, ok := handler.PageMap[path]; ok {
 		handler.ServeFile(file, writer, request)
 		return
-	}*/
+	}
 	handler.Handle404(writer, request)
 }

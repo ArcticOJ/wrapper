@@ -76,11 +76,6 @@ func StartServer() {
 				handler.ServeFile(v, writer, request)
 			})
 		}
-		for k, v := range normalRoutes {
-			router.GET(k, func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
-				handler.ServeFile(v, writer, request)
-			})
-		}
 		router.NotFound = handler
 		server = router
 	} else {
