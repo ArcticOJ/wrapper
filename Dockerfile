@@ -14,7 +14,8 @@ RUN yarn export -o bundle
 FROM golang:alpine AS builder
 WORKDIR /usr/src/app
 
-COPY go.mod go.sum ./
+ADD . .
+
 RUN go mod download
 
 COPY --from=bundler /usr/src/avalanche/bundle ./avalanche/
