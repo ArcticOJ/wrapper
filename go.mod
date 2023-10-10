@@ -1,4 +1,4 @@
-module wrapper
+module github.com/ArcticOJ/wrapper/v0
 
 go 1.21
 
