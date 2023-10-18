@@ -86,7 +86,7 @@ func Handle404(_fs fs.FS, c echo.Context) error {
 
 func Register(ec *echo.Echo, Bundle fs.FS) {
 	ec.Use(COEP())
-	if os.Getenv("ENV") == "dev" {
+	if os.Getenv("WEB_ENV") == "dev" {
 		// my own ip, for local development only
 		u, _ := url.Parse("http://localhost:3000")
 		ec.Use(middleware.ProxyWithConfig(middleware.ProxyConfig{
