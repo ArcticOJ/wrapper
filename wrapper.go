@@ -1,13 +1,12 @@
 package wrapper
 
 import (
+	"github.com/ArcticOJ/blizzard/v0/logger"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"io"
 	"io/fs"
 	"mime"
-	"net/url"
-	"os"
 	"path"
 	"regexp"
 	"strconv"
@@ -16,9 +15,9 @@ import (
 
 type RouteMap = map[string]string
 
-func Traverse(efs fs.FS) (files []string, err error) {
-	if err := fs.WalkDir(efs, ".", func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
+func Traverse(box *rice.Box) (files []string, err error) {
+	if err := box.Walk(".", func(path string, inf fs.FileInfo, err error) error {
+		if inf.IsDir() {
 			return nil
 		}
 		files = append(files, path)
@@ -59,11 +58,11 @@ func BuildRoutes(files []string) (routes RouteMap) {
 	return
 }
 
-func ServeFile(_fs fs.FS, c echo.Context, name string, mime string, is404 bool) error {
-	f, e := _fs.Open(name)
+func ServeFile(box *rice.Box, c echo.Context, name string, mime string, is404 bool) error {
+	f, e := box.Open(name)
 	if e != nil {
 		if !is404 {
-			return Handle404(_fs, c)
+			return ServeFile(box, c, "404.html", "text/html", true)
 		}
 		return e
 	}
@@ -80,26 +79,8 @@ func ServeFile(_fs fs.FS, c echo.Context, name string, mime string, is404 bool) 
 	return err
 }
 
-func Handle404(_fs fs.FS, c echo.Context) error {
-	return ServeFile(_fs, c, "404.html", "text/html", true)
-}
-
-func Register(ec *echo.Echo, Bundle fs.FS) {
-	ec.Use(COEP())
-	if os.Getenv("WEB_ENV") == "dev" {
-		// my own ip, for local development only
-		u, _ := url.Parse("http://localhost:3000")
-		ec.Use(middleware.ProxyWithConfig(middleware.ProxyConfig{
-			Skipper: func(c echo.Context) bool {
-				return strings.HasPrefix(c.Request().URL.Path, "/api")
-			},
-			Balancer: middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
-				{
-					URL: u,
-				},
-			}),
-		}))
-	} else if files, e := Traverse(Bundle); e == nil {
+func Register(ec *echo.Echo, bundle *rice.Box) {
+	if files, e := Traverse(bundle); e == nil {
 		routes := BuildRoutes(files)
 		for k, v := range routes {
 			x := v
@@ -108,11 +89,13 @@ func Register(ec *echo.Echo, Bundle fs.FS) {
 				t = mime.TypeByExtension(path.Ext(x))
 			}
 			ec.GET(k, func(c echo.Context) error {
-				return ServeFile(Bundle, c, x, t, k == "404")
+				return ServeFile(bundle, c, x, t, k == "404")
 			})
 		}
 		ec.RouteNotFound("/*", func(c echo.Context) error {
-			return ServeFile(Bundle, c, "404.html", "text/html", true)
+			return ServeFile(bundle, c, "404.html", "text/html", true)
 		})
+	} else {
+		logger.Panic(e, "failed to load embedded web bundle")
 	}
 }
